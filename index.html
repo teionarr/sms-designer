@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>iMessage Designer</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+      background: #1c1c1e;
+      color: #fff;
+      min-height: 100vh;
+      display: flex;
+      gap: 0;
+    }
+
+    /* ── Left panel ── */
+    .editor {
+      width: 380px;
+      min-width: 280px;
+      flex-shrink: 0;
+      background: #2c2c2e;
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid #3a3a3c;
+    }
+
+    .editor-header {
+      padding: 20px 20px 12px;
+      border-bottom: 1px solid #3a3a3c;
+    }
+
+    .editor-header h1 {
+      font-size: 17px;
+      font-weight: 600;
+      color: #fff;
+      letter-spacing: -0.3px;
+    }
+
+    .editor-header p {
+      font-size: 12px;
+      color: #8e8e93;
+      margin-top: 4px;
+      line-height: 1.4;
+    }
+
+    textarea {
+      flex: 1;
+      background: #1c1c1e;
+      color: #e5e5ea;
+      border: none;
+      outline: none;
+      resize: none;
+      font-family: "SF Mono", "Menlo", monospace;
+      font-size: 13px;
+      line-height: 1.6;
+      padding: 16px;
+    }
+
+    textarea::placeholder { color: #48484a; }
+
+    .editor-footer {
+      padding: 12px 16px;
+      border-top: 1px solid #3a3a3c;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .legend {
+      font-size: 11px;
+      color: #636366;
+      flex: 1;
+    }
+
+    .legend span {
+      display: inline-block;
+      margin-right: 10px;
+    }
+
+    .legend .dot-blue { color: #0a84ff; }
+    .legend .dot-gray { color: #8e8e93; }
+
+    button {
+      background: #0a84ff;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 8px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+
+    button:hover { opacity: 0.85; }
+
+    button.secondary {
+      background: #3a3a3c;
+    }
+
+    /* ── Right panel: phone preview ── */
+    .preview-wrap {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+    }
+
+    .phone {
+      width: 375px;
+      background: #000;
+      border-radius: 54px;
+      box-shadow:
+        0 0 0 2px #3a3a3c,
+        0 0 0 10px #1c1c1e,
+        0 40px 80px rgba(0,0,0,0.6);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      height: 720px;
+    }
+
+    .phone-statusbar {
+      background: #000;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 28px 0;
+      font-size: 12px;
+      font-weight: 600;
+      color: #fff;
+      flex-shrink: 0;
+    }
+
+    .phone-statusbar .time { font-size: 15px; font-weight: 600; }
+    .phone-statusbar .icons { display: flex; gap: 6px; align-items: center; font-size: 11px; }
+
+    .phone-topbar {
+      background: #1c1c1e;
+      border-bottom: 0.5px solid #3a3a3c;
+      padding: 10px 16px 10px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+
+    .phone-topbar .back {
+      color: #0a84ff;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      gap: 2px;
+    }
+
+    .avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #5e5ce6, #bf5af2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    .contact-info { flex: 1; text-align: center; }
+    .contact-info .name { font-size: 13px; font-weight: 600; color: #fff; }
+    .contact-info .sub { font-size: 11px; color: #8e8e93; margin-top: 1px; }
+
+    .phone-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px 12px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      background: #000;
+      scrollbar-width: none;
+    }
+
+    .phone-messages::-webkit-scrollbar { display: none; }
+
+    .msg {
+      display: flex;
+      flex-direction: column;
+      max-width: 72%;
+      animation: popIn 0.2s ease;
+    }
+
+    @keyframes popIn {
+      from { opacity: 0; transform: scale(0.85) translateY(6px); }
+      to   { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    .msg.sent  { align-self: flex-end; align-items: flex-end; }
+    .msg.recv  { align-self: flex-start; align-items: flex-start; }
+
+    .bubble {
+      padding: 9px 13px;
+      border-radius: 18px;
+      font-size: 16px;
+      line-height: 1.35;
+      word-break: break-word;
+    }
+
+    .msg.sent .bubble {
+      background: #0a84ff;
+      color: #fff;
+      border-bottom-right-radius: 4px;
+    }
+
+    .msg.recv .bubble {
+      background: #1c1c1e;
+      color: #fff;
+      border-bottom-left-radius: 4px;
+    }
+
+    /* tail tweaks for consecutive bubbles */
+    .msg.sent.tail-hidden .bubble  { border-bottom-right-radius: 18px; }
+    .msg.recv.tail-hidden .bubble  { border-bottom-left-radius: 18px; }
+
+    .timestamp {
+      font-size: 10px;
+      color: #636366;
+      margin-top: 2px;
+      padding: 0 4px;
+    }
+
+    .spacer { height: 8px; }
+
+    .phone-inputbar {
+      background: #1c1c1e;
+      border-top: 0.5px solid #3a3a3c;
+      padding: 8px 12px 24px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .phone-inputbar .fake-input {
+      flex: 1;
+      background: #2c2c2e;
+      border: 0.5px solid #3a3a3c;
+      border-radius: 20px;
+      padding: 7px 14px;
+      font-size: 15px;
+      color: #48484a;
+    }
+
+    .phone-inputbar .send-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #0a84ff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+    }
+
+    /* ── empty state ── */
+    .empty {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #3a3a3c;
+      font-size: 14px;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .empty .icon { font-size: 36px; }
+  </style>
+</head>
+<body>
+
+<!-- ── Editor panel ── -->
+<div class="editor">
+  <div class="editor-header">
+    <h1>iMessage Designer</h1>
+    <p>Prefix each line with <code style="color:#636366">1</code> for received or <code style="color:#0a84ff">2</code> for sent.</p>
+  </div>
+
+  <textarea id="input" placeholder="1 you have no savings&#10;2 i have a digital manifestation&#10;1 that's just a picture&#10;2 that's just a salary"></textarea>
+
+  <div class="editor-footer">
+    <div class="legend">
+      <span class="dot-gray">● 1 received (gray)</span>
+      <span class="dot-blue">● 2 sent (blue)</span>
+    </div>
+    <button class="secondary" id="clearBtn">Clear</button>
+    <button id="renderBtn">Render</button>
+  </div>
+</div>
+
+<!-- ── Phone preview ── -->
+<div class="preview-wrap">
+  <div class="phone">
+    <div class="phone-statusbar">
+      <span class="time" id="clockDisplay">10:58</span>
+      <div class="icons">
+        <svg width="16" height="12" viewBox="0 0 16 12" fill="white"><rect x="0" y="3" width="3" height="9" rx="1"/><rect x="4" y="2" width="3" height="10" rx="1"/><rect x="8" y="1" width="3" height="11" rx="1"/><rect x="12" y="0" width="3" height="12" rx="1"/></svg>
+        <svg width="15" height="12" viewBox="0 0 15 12" fill="white"><path d="M7.5 1.5C9.8 1.5 11.8 2.5 13.2 4L14.5 2.7C12.7 0.9 10.2 0 7.5 0S2.3.9.5 2.7L1.8 4C3.2 2.5 5.2 1.5 7.5 1.5z"/><path d="M7.5 4.5c1.5 0 2.8.6 3.8 1.5L12.6 4.7C11.2 3.4 9.4 2.5 7.5 2.5S3.8 3.4 2.4 4.7l1.3 1.3C4.7 5.1 6 4.5 7.5 4.5z"/><circle cx="7.5" cy="9" r="2"/></svg>
+        <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3.5" stroke="white" stroke-opacity="0.35"/><rect x="1" y="1" width="18" height="10" rx="3" fill="white"/><path d="M23 4v4a2 2 0 000-4z" fill="white" fill-opacity="0.4"/></svg>
+      </div>
+    </div>
+
+    <div class="phone-topbar">
+      <div class="back">
+        <svg width="10" height="16" viewBox="0 0 10 16" fill="#0a84ff"><path d="M8.5 1L1.5 8l7 7" stroke="#0a84ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+        <span style="font-size:13px;color:#0a84ff;margin-left:2px">3</span>
+      </div>
+      <div class="avatar">T</div>
+      <div class="contact-info">
+        <div class="name">them</div>
+        <div class="sub">iMessage</div>
+      </div>
+      <div style="width:36px"></div>
+    </div>
+
+    <div class="phone-messages" id="messages">
+      <div class="empty">
+        <div class="icon">💬</div>
+        <div>Type a dialogue and hit Render</div>
+      </div>
+    </div>
+
+    <div class="phone-inputbar">
+      <div class="fake-input">iMessage</div>
+      <div class="send-btn">↑</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Live clock
+  function updateClock() {
+    const now = new Date();
+    const h = now.getHours().toString().padStart(2,'0');
+    const m = now.getMinutes().toString().padStart(2,'0');
+    document.getElementById('clockDisplay').textContent = `${h}:${m}`;
+  }
+  updateClock();
+  setInterval(updateClock, 10000);
+
+  function render() {
+    const raw = document.getElementById('input').value;
+    const lines = raw.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+    const container = document.getElementById('messages');
+
+    if (!lines.length) {
+      container.innerHTML = `<div class="empty"><div class="icon">💬</div><div>Type a dialogue and hit Render</div></div>`;
+      return;
+    }
+
+    // Group consecutive same-side messages
+    const groups = [];
+    lines.forEach(line => {
+      const prefix = line[0];
+      if (prefix !== '1' && prefix !== '2') return;
+      const text = line.slice(1).trim();
+      if (!text) return;
+      const side = prefix === '1' ? 'recv' : 'sent';
+      if (groups.length && groups[groups.length-1].side === side) {
+        groups[groups.length-1].texts.push(text);
+      } else {
+        groups.push({ side, texts: [text] });
+      }
+    });
+
+    container.innerHTML = '';
+
+    groups.forEach((group, gi) => {
+      // spacer between groups
+      if (gi > 0) {
+        const sp = document.createElement('div');
+        sp.className = 'spacer';
+        container.appendChild(sp);
+      }
+
+      group.texts.forEach((text, i) => {
+        const isLast = i === group.texts.length - 1;
+        const wrap = document.createElement('div');
+        wrap.className = `msg ${group.side}${!isLast ? ' tail-hidden' : ''}`;
+
+        const bubble = document.createElement('div');
+        bubble.className = 'bubble';
+        bubble.textContent = text;
+        wrap.appendChild(bubble);
+
+        // Show "Read" timestamp only on last sent bubble of last group
+        if (isLast && group.side === 'sent' && gi === groups.length - 1) {
+          const ts = document.createElement('div');
+          ts.className = 'timestamp';
+          const h = 6 + Math.floor(Math.random() * 5); // 6–10 PM
+          const m = Math.floor(Math.random() * 60).toString().padStart(2,'0');
+          ts.textContent = `Read ${h}:${m} PM`;
+          wrap.appendChild(ts);
+        }
+
+        container.appendChild(wrap);
+      });
+    });
+
+    // Scroll to bottom
+    container.scrollTop = container.scrollHeight;
+  }
+
+  // Render on button click
+  document.getElementById('renderBtn').addEventListener('click', render);
+
+  // Also render live as user types (debounced)
+  let debounce;
+  document.getElementById('input').addEventListener('input', () => {
+    clearTimeout(debounce);
+    debounce = setTimeout(render, 300);
+  });
+
+  document.getElementById('clearBtn').addEventListener('click', () => {
+    document.getElementById('input').value = '';
+    render();
+  });
+
+  // Render example on load
+  document.getElementById('input').value = `1 you have no savings\n2 i have a digital manifestation\n1 that's just a picture\n2 that's just a salary`;
+  render();
+</script>
+</body>
+</html>
